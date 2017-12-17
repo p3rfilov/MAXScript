@@ -36,16 +36,16 @@ rollout myToolbox "My ToolBox v1.0" width:200 height:296
 	/*---------------------------------------------------------------
 	Purpose: Illegal character filtering
 	Input: String
-	Return: Boolean
+	Return: String
 	*/---------------------------------------------------------------
 	fn filter_Text str =
 	(
 		legalChars = "AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz0123456789_- "
 		badChars = filterString str legalChars
 		if badChars.count != 0 then
-		return false
+		return (replace str str.count 1 "")
 		else
-		return true
+		return str
 	)
 	
 	fn create_Category dir name =
@@ -248,11 +248,7 @@ rollout myToolbox "My ToolBox v1.0" width:200 height:296
 			)
 			else messagebox "Enter a valid name for the Category" title:"Empty Input" beep:false
 		)
-		on edt_cat changed text do
-		(
-			t = filter_Text text
-			if not t do edt_cat.text = replace text text.count 1 ""
-		)
+		on edt_cat changed text do edt_cat.text = filter_Text text
 	)
 	
 	---------------------------------------- CONTROLS ----------------------------------------
