@@ -29,10 +29,38 @@ rollout myToolbox "My ToolBox v1.0" width:200 height:296
 	
 	local toolboxDir = (getdir #downloads) + "\\toolBox\\"
 	local settingsFile = toolboxDir + "Settings.ini"
+	local loc = getFilenamePath (getThisScriptFilename())
+	local defaultsFolder = loc + "\\toolBox defaults\\"
 	local scriptArray = #()
 	
 	---------------------------------------- FUNCTIONS ----------------------------------------
 	
+	/*---------------------------------------------------------------
+	Purpose:
+		Copies files from the defaults folder (def) to a destination folder (dest).
+		Allows creation of global default categories for the whole studio
+	Input: def - Source folder path; dest - destination folder path
+	Return: None
+	*/---------------------------------------------------------------
+	fn copy_Defaults def dest =
+	(
+		if doesFileExist def do
+		(
+			files = getFiles (def + "*.txt")
+			for i in files do
+			(
+				f = filenameFromPath i
+				d = dest + f
+				if not (copyFile i d) do
+					if (deleteFile d) then
+						if not (copyFile i d) do
+							messagebox "Could not copy default file!" title:"Copy Failed" beep:false
+					else
+						messagebox "Could not delete default file!" title:"Delete Failed" beep:false
+			)
+		)
+	)
+		
 	/*---------------------------------------------------------------
 	Purpose: Illegal character filtering
 	Input: String
@@ -266,6 +294,7 @@ rollout myToolbox "My ToolBox v1.0" width:200 height:296
 				store_Settings settingsFile toolboxDir ddl_category
 			)
 		)
+		copy_Defaults defaultsFolder toolboxDir
 		update_Categories toolboxDir ddl_category
 		load_Settings settingsFile ddl_category
 		scriptArray = update_Scripts toolboxDir ddl_category lbx_scripts
