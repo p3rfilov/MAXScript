@@ -51,12 +51,9 @@ rollout myToolbox "My ToolBox v1.0" width:200 height:296
 			(
 				f = filenameFromPath i
 				d = dest + f
+				deleteFile d
 				if not (copyFile i d) do
-					if (deleteFile d) then
-						if not (copyFile i d) do
-							messagebox "Could not copy default file!" title:"Copy Failed" beep:false
-					else
-						messagebox "Could not delete default file!" title:"Delete Failed" beep:false
+					messagebox "Could not copy default file!" title:"Copy Failed" beep:false
 			)
 		)
 	)
