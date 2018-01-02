@@ -14,7 +14,7 @@ Options:
 
 try(destroydialog carPlacer)catch()
 
-rollout carPlacer "Car Placer v1.0" width:176 height:456
+rollout carPlacer "Car Placer v1.0" width:176 height:447
 (
 	pickbutton 'btn_base' "> Pick Base Surface <" pos:[8,208] width:160 height:24 align:#left
 	checkbutton 'btn_start' "Start" pos:[8,256] width:160 height:40 align:#left
@@ -31,7 +31,7 @@ rollout carPlacer "Car Placer v1.0" width:176 height:456
 	checkbox 'chk_wheels' "Align wheels" pos:[16,320] width:144 height:16 checked:true align:#left
 	label 'lbl3' "Filter:" pos:[16,360] width:32 height:16 align:#left
 	button 'btn_readjust' "Readjust Selected" pos:[16,408] width:144 height:24 align:#left
-	HyperLink 'hl' "perfilov3d.com" pos:[96,440] width:72 height:16 address:"http://perfilov3d.com/" align:#left
+	--HyperLink 'hl' "perfilov3d.com" pos:[96,440] width:72 height:16 address:"http://perfilov3d.com/" align:#left
 	
 	local baseObj
 	local wString
@@ -247,7 +247,7 @@ rollout carPlacer "Car Placer v1.0" width:176 height:456
 		
 		on mouseAbort clickno do
 		(
-			if instObjs != undefined do delete instObjs
+			try(delete instObjs)catch()
 			if clickno <= 1 do btn_start.checked = false
 		)
 		
