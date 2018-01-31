@@ -1,1 +1,1 @@
-A set of tools to optimize, unwrap and prepare all scene objects for rendering to texture and/or importing into Unreal Engine
+A set of tools for optimizing, unwrapping and preparing all scene objects for rendering to texture and/or importing into Unreal Engine
