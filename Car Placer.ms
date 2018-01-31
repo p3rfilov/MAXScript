@@ -14,23 +14,24 @@ Options:
 
 try(destroydialog carPlacer)catch()
 
-rollout carPlacer "Car Placer v1.0" width:176 height:447
+rollout carPlacer "Car Placer v1.0" width:176 height:464
 (
-	pickbutton 'btn_base' "> Pick Base Surface <" pos:[8,208] width:160 height:24 align:#left
-	checkbutton 'btn_start' "Start" pos:[8,256] width:160 height:40 align:#left
-	edittext 'edt_find' text:"wheel" pos:[48,360] width:112 height:16 align:#left
-	spinner 'spn_offset' "" pos:[104,384] width:56 height:16 range:[-1000,1000,-10] scale:5 align:#left
-	label 'lbl1' "Surface offset" pos:[16,384] width:80 height:16 align:#left
-	checkbox 'chk_precise' "Precision Mode (slower)" pos:[16,336] width:144 height:16 enabled:true checked:true align:#left
+	pickbutton 'btn_base' "> Pick Base Surface <" pos:[16,223] width:144 height:24 align:#left
+	checkbutton 'btn_start' "Start" pos:[8,277] width:160 height:40 align:#left
+	edittext 'edt_find' text:"wheel" pos:[48,376] width:112 height:16 align:#left
+	spinner 'spn_offset' "" pos:[104,400] width:56 height:16 range:[-1000,1000,-10] scale:5 align:#left
+	label 'lbl1' "Surface offset" pos:[16,400] width:80 height:16 align:#left
+	checkbox 'chk_precise' "Precision Mode (slower)" pos:[16,352] width:144 height:16 enabled:true checked:true align:#left
 	listbox 'lbx_items' "Item List" pos:[8,8] width:160 height:10 align:#left
 	checkbox 'chk_random' "Randomize Item selection" pos:[8,184] width:160 height:16 checked:true align:#left
 	button 'btn_add' "+" pos:[8,160] width:80 height:24 align:#left
 	button 'btn_del' "-" pos:[88,160] width:80 height:24 align:#left
-	checkbox 'chk_smooth' "Remove surface smoothing" pos:[8,232] width:160 height:16 checked:false align:#left
-	GroupBox 'grp1' "Wheel Settings" pos:[8,304] width:160 height:136 align:#left
-	checkbox 'chk_wheels' "Align wheels" pos:[16,320] width:144 height:16 checked:true align:#left
-	label 'lbl3' "Filter:" pos:[16,360] width:32 height:16 align:#left
-	button 'btn_readjust' "Readjust Selected" pos:[16,408] width:144 height:24 align:#left
+	checkbox 'chk_smooth' "Remove surface smoothing" pos:[16,249] width:144 height:16 checked:false align:#left
+	GroupBox 'grp1' "Wheel Settings" pos:[8,320] width:160 height:136 align:#left
+	checkbox 'chk_wheels' "Align wheels" pos:[16,336] width:144 height:16 checked:true align:#left
+	label 'lbl3' "Filter:" pos:[16,376] width:32 height:16 align:#left
+	button 'btn_readjust' "Readjust Selected" pos:[16,424] width:144 height:24 align:#left
+	groupBox 'grp2' "Surface Settings" pos:[8,206] width:160 height:64 align:#left
 	--HyperLink 'hl' "perfilov3d.com" pos:[96,440] width:72 height:16 address:"http://perfilov3d.com/" align:#left
 	
 	local baseObj
