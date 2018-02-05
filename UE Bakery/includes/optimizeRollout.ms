@@ -74,10 +74,6 @@ rollout optimizeRollout "Optimize Geometry" width:176 height:424
 	on btn_run pressed do
 	(
 		stopped = False
-		start = 0
-		end = 0
-		timeLeft = "unknown"
-		
 		max modify mode
 		buttons off
 		hadSelection = selection.count > 0
@@ -129,10 +125,19 @@ rollout optimizeRollout "Optimize Geometry" width:176 height:424
 		buttons off
 		sel = #()
 		objs = getObjects chk_selectionOnly chk_ignoreProxy
+		count = objs.count
+		index = 0
 		clearselection()
-		sel = for o in objs where isMeshTooBig o spn_verts.value and not stopped collect o
+		for o in objs where not stopped do
+		(
+			if isMeshTooBig o spn_verts.value do append sel o
+			index += 1
+			pb1.value = 100*index/count
+			windows.processPostedMessages()
+		)
 		select sel
 		buttons on
+		pb1.value = 0
 	)
 	on btn_selectSmallMeshes pressed do
 	(
@@ -140,9 +145,22 @@ rollout optimizeRollout "Optimize Geometry" width:176 height:424
 		buttons off
 		sel = #()
 		objs = getObjects chk_selectionOnly chk_ignoreProxy
+		count = objs.count
+		index = 0
 		clearselection()
-		sel = for o in objs where isMeshTooSmall o spn_boxSize.value and not stopped collect o
+		for o in objs where not stopped do
+		(
+			if isMeshTooSmall o spn_boxSize.value do
+			(
+				if isGroupMember o do setGroupOpen o.parent true
+				append sel o
+			)
+			index += 1
+			pb1.value = 100*index/count
+			windows.processPostedMessages()
+		)
 		select sel
 		buttons on
+		pb1.value = 0
 	)
 )

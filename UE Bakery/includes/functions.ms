@@ -33,8 +33,10 @@ struct statsUpdater
 		if not idle then
 		(
 			calculateTime()
+			m = obj
+			try(m = obj.mesh)catch(m = snapshotAsMesh obj)
 			append stats ("Object: " + obj.name)
-			append stats ("Vertex count: " + obj.mesh.numVerts as string)
+			append stats ("Vertex count: " + m.numVerts as string)
 			append stats ""
 			append stats ("Est. time left: " + timeLeft)
 			list_box.items = stats
