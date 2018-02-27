@@ -313,7 +313,7 @@ rollout PrAttach "Attach by Proximity" width:192 height:328
 								InstanceMgr.MakeObjectsUnique head #individual
 								flip_Normals head
 								resetxform head
-								convertToMesh head
+								convertToPoly head
 								for o = 2 to i.count do -- retArr
 								(
 									for j = i[o].count to 1 by -1 where not cancel do -- tempArr
@@ -323,8 +323,8 @@ rollout PrAttach "Attach by Proximity" width:192 height:328
 										InstanceMgr.MakeObjectsUnique ob #individual
 										flip_Normals ob
 										resetxform ob
-										convertToMesh ob
-										attach head ob
+										convertToPoly ob
+										polyop.attach head ob
 										cnt += 1
 										pb1.value = 100*cnt/objCount
 										windows.processPostedMessages()
