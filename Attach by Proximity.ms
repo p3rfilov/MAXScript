@@ -16,22 +16,23 @@ Clean Selected Groups – Clean up nested groups
 
 try(destroydialog PrAttach)catch()
 
-rollout PrAttach "Attach by Proximity" width:192 height:304
+rollout PrAttach "Attach by Proximity" width:192 height:328
 (
 	spinner 'spn_thr' "" pos:[112,8] width:72 height:16 range:[1,1e+06,1000] type:#float scale:10 align:#left
 	label 'lbl1' "Distance threshold" pos:[8,8] width:96 height:16 align:#left
 	checkbox 'chk_minMax' "Use Bounding box (more precise)" pos:[8,32] width:176 height:16 enabled:true checked:true align:#left
 	checkbox 'chk_mat' "Split by Material" pos:[8,48] width:176 height:16 checked:true align:#left
-	button 'btn_attach' "Attach" pos:[8,112] width:176 height:24 align:#left
-	button 'btn_cancel' "Cancel" pos:[8,176] width:176 height:24 enabled:false align:#left
-	progressBar 'pb1' "ProgressBar" pos:[8,208] width:176 height:8 color:(color 0 128 0) align:#left
+	button 'btn_attach' "Attach" pos:[8,136] width:176 height:24 align:#left
+	button 'btn_cancel' "Cancel" pos:[8,200] width:176 height:24 enabled:false align:#left
+	progressBar 'pb1' "ProgressBar" pos:[8,232] width:176 height:8 color:(color 0 128 0) align:#left
 	button 'btn_preview' "Preview (wire color)" pos:[8,88] width:176 height:24 align:#left
 	checkbox 'chk_disp' "Ignore VrayDisplacementMod" pos:[8,64] width:176 height:16 checked:true align:#left
-	GroupBox 'grp1' "Additional Tools" pos:[8,224] width:176 height:72 align:#left
-	button 'btn_groups' "Clean Selected Groups" pos:[16,240] width:160 height:24 align:#left
-	checkbox 'chk_delVerts' "Delete Isolated Vertices" pos:[8,136] width:176 height:16 checked:true align:#left
-	button 'btn_deadGeometry' "Select Dead Geometry" pos:[16,264] width:160 height:24 align:#left
-	checkbox 'chk_select' "Select Attached on Completion" pos:[8,152] width:176 height:16 align:#left
+	GroupBox 'grp1' "Additional Tools" pos:[8,248] width:176 height:72 align:#left
+	button 'btn_groups' "Clean Selected Groups" pos:[16,264] width:160 height:24 align:#left
+	checkbox 'chk_delVerts' "Delete Isolated Vertices" pos:[8,160] width:176 height:16 checked:true align:#left
+	button 'btn_deadGeometry' "Select Dead Geometry" pos:[16,288] width:160 height:24 align:#left
+	checkbox 'chk_select' "Select Attached on Completion" pos:[8,176] width:176 height:16 align:#left
+	radioButtons 'rdo_dispColor' "" pos:[30,113] width:138 height:16 labels:#("material", "object") columns:2 align:#left
 	
 	local objArr = #()
 	local returnArr = #()
@@ -69,14 +70,14 @@ rollout PrAttach "Attach by Proximity" width:192 height:304
 		with redraw off
 		(
 			gCount = geometry.count
-			for i in geometry where not i.isHidden do
+			for i in geometry where not i.isHidden and classOf i != Forest_Pro do
 			(
 				if not cancel do
 				(
 					count += 1
 					windows.processPostedMessages()
 					pb1.value = 100*count/gCount
-					if try(i.numVerts == 0)catch(false) do
+					if try(i.mesh.numVerts == 0)catch(false) do
 					(
 						if isGroupMember i do setGroupOpen i.parent true
 						append sel i
@@ -381,6 +382,10 @@ rollout PrAttach "Attach by Proximity" width:192 height:304
 				)
 			)
 		)
+		
+		rdo_dispColor.state = 2
+		displayColor.shaded = #object
+		
 		buttons on
 		objArr = #()
 		returnArr = #()
@@ -403,6 +408,11 @@ rollout PrAttach "Attach by Proximity" width:192 height:304
 	on btn_deadGeometry pressed do
 	(
 		deadGeometry pb1
+	)
+	on rdo_dispColor changed stat do
+	(
+		if stat == 1 do displayColor.shaded = #material
+		if stat == 2 do displayColor.shaded = #object
 	)
 )
 
