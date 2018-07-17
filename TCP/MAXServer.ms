@@ -17,10 +17,11 @@ fn TCPListener =
 	theIPAddress = IPAddress.Parse "127.0.0.1"
 	theTcpListener = DotNetObject "System.Net.Sockets.TcpListener" theIPAddress 7777
 	theTcpListener.Start()
-	theString=""
-	theSocket = theTcpListener.AcceptSocket()
+	theString = ""
+	theSocket = ""
 	while theString != "exit" do
 	(
+		theSocket = theTcpListener.AcceptSocket() -- the listener dies on startup. Moved socket creation inside the while loop
 		theByteStream = DotNetObject "System.Byte[]" 1024
 		theSocket.Receive theByteStream
 		Encoding = DotnetClass "System.Text.Encoding"
@@ -31,9 +32,10 @@ fn TCPListener =
 			theSocket.Disconnect(true)
 			theSocket = theTcpListener.AcceptSocket()
 		)
+		theSocket.Disconnect(true)
 	)
+	try(theSocket.Disconnect(true))catch()
 	theTcpListener.Stop()
-	theSocket.Disconnect(true)
 )
 
 fn setupBackgroundWorker TCPL =
@@ -44,4 +46,6 @@ fn setupBackgroundWorker TCPL =
 	BackgroundWorker.RunWorkerAsync()
 )
 
-server = setupBackgroundWorker TCPListener
+-- server = setupBackgroundWorker TCPListener
+TCPListener() -- run listener on the main thread
+

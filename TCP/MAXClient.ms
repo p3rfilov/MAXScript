@@ -5,13 +5,13 @@ Description:
 TCP Client for 3ds MAX
 
 Usage:
-socket = MAXsocket "127.0.0.1" 7777
+socket = MAXclient "127.0.0.1" 7777
 socket.send <MAXScript command as string>
 socket.send "exit" -- stop TCP Listener
 
 */---------------------------------------------------------------
 
-struct MAXsocket
+struct MAXclient
 (
 	ip_address = "127.0.0.1",
 	port = 7777,
@@ -34,21 +34,23 @@ struct MAXsocket
 		(
 			result = socket.Send bytes
 			socket.close()
-			sleep 0.001
+			sleep 0.005
+			return True
 		)
 		else
 		(
-			print "Could not create socket! Data was not sent!"
+-- 			print "Could not create socket! Data was not sent!"
+			return False
 		)
 	)
 )
 
-socket = MAXsocket "127.0.0.1" 7777
-socket.send "exit"
+-- socket = MAXclient "127.0.0.1" 7777
+-- socket.send "exit"
 
 -- for i in 1 to 100000 by 100 do
 -- (
--- 	socket = MAXsocket "127.0.0.1" 7777
+-- 	socket = MAXclient "127.0.0.1" 7777
 -- 	cmd = stringstream ""
 -- 	format "box pos:[%, %, 0]" i i to:cmd
 -- 	socket.send cmd
