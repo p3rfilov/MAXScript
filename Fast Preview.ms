@@ -19,7 +19,7 @@ rollout fastPreview "Fast Preview" width:144 height:224
 (
 	button 'btn_begin' "Begin Session" pos:[8,40] width:128 height:40 align:#left
 	progressBar 'pb_status' "" pos:[8,8] width:128 height:8 value:100 color:yellow align:#left
-	button 'btn_render' "Render Preview" pos:[8,176] width:128 height:40 align:#left enabled:true
+	button 'btn_render' "Render Preview" pos:[8,176] width:128 height:40 align:#left enabled:false
 	checkbox 'chk_range' "Set custom range" pos:[16,105] width:104 height:16 checked:false align:#left
 	GroupBox 'grp1' "Sequence Info" pos:[8,88] width:128 height:80 align:#left
 	spinner 'spn_from' "" pos:[16,125] width:56 height:16 enabled:false range:[-100000,100000,0] type:#integer scale:1 align:#left
@@ -28,7 +28,55 @@ rollout fastPreview "Fast Preview" width:144 height:224
 	label 'lbl_fps' "@ ?? fps" pos:[47,147] width:52 height:16 align:#left
 	
 	local connecting = false
-	local mergeFile = GetDir #temp + "/quickPreview.max"
+	local previewFile = GetDir #preview + "\\quickPreview.avi"
+	local mergeFile = GetDir #autoback + "\\quickPreview.max"
+	
+	fn setFPSLable =
+	(
+		lbl_fps.text = "@ " + frameRate as string + " fps"
+	)
+	
+	fn isFileUnlocked file =
+	(
+		try
+		(
+			f = openFile file mode:"a"
+			close f
+		) catch(return false)
+		if f != undefined then
+			return true
+		else
+			return false
+	)
+	
+	fn ckeckIfBusy =
+	(
+		sleep 0.5
+		busy = true
+		sleepTime = 0.2
+		counter = 0
+		limit = 120.0
+		while busy and counter < limit do
+		(
+			if not (isFileUnlocked previewFile) then
+			(
+				sleep sleepTime
+				counter += sleepTime
+				windows.processPostedMessages()
+				lbl_status.text = "Status: Busy..."
+				pb_status.color = yellow
+				btn_render.enabled = false
+			)
+			else
+			(
+				busy = false
+				counter += limit
+				lbl_status.text = "Status: Online!"
+				pb_status.color = color 0 150 0
+				btn_render.enabled = true
+			)
+		)
+	)
 	
 	fn getCameraRange =
 	(
@@ -71,7 +119,9 @@ rollout fastPreview "Fast Preview" width:144 height:224
 		cmd = stringstream ""
 		if range != undefined do
 		(
-			format "preview_name = (getDir #preview)+\"/quickpreview.avi\";" to:cmd
+			format "animationRange = %;" animationRange to:cmd
+			format "frameRate = %;" frameRate to:cmd
+			format "preview_name = \"%\";" previewFile to:cmd
 			format "view_size = getViewSize()/2;" to:cmd
 			format "anim_bmp = bitmap view_size.x view_size.y filename:preview_name;" to:cmd
 			format "for t = % to % do" range[1] range[2] to:cmd
@@ -93,8 +143,8 @@ rollout fastPreview "Fast Preview" width:144 height:224
 		cam = getactivecamera()
 		saveNodes #(cam) mergeFile
 		cmd = stringstream ""
-		format "mergemaxfile % quiet:true;" mergeFile to:cmd
-		format "viewport.setCamera %;" cam to:cmd
+		format "mergemaxfile \"%\";" mergeFile to:cmd
+		format "viewport.setCamera (getnodebyname \"%\");" cam.name to:cmd
 		return cmd as string
 	)
 	
@@ -109,9 +159,18 @@ rollout fastPreview "Fast Preview" width:144 height:224
 		return cmd as string
 	)
 	
-	fn buildSceneObjectsScript =
+	fn buildSceneObjectsAsBoxesScript =
 	(
 		cmd = stringstream ""
+		if selection.count != 0 then
+		(
+			sel = execute "$/selection/*"
+			for obj in sel do
+			(
+				
+			)
+		)
+		else messagebox "Please select objects you wish to see in the preview." title:"No selection" beeb:false
 		return cmd as string
 	)
 	
@@ -146,13 +205,20 @@ rollout fastPreview "Fast Preview" width:144 height:224
 	(
 		socket = MAXclient "127.0.0.1" 7777
 		socket.send "quitMax #noPrompt"
--- 		socket.send "exit"
+		socket.send "quitMax #noPrompt"
 	)
 	
 	fn enableSessionButtons state = 
 	(
 		btn_begin.enabled = not state
 		btn_render.enabled = state
+	)
+	
+	fn setupViewportStyleOnFirstLaunch =
+	(
+		viewportStyle = buildViewportStyleScript()
+		socket = MAXclient "127.0.0.1" 7777
+		socket.send viewportStyle
 	)
 	
 	fn waitForPort =
@@ -175,6 +241,7 @@ rollout fastPreview "Fast Preview" width:144 height:224
 				active = True
 				counter += limit
 				enableSessionButtons true
+				setupViewportStyleOnFirstLaunch()
 			)
 		)
 	)
@@ -183,7 +250,7 @@ rollout fastPreview "Fast Preview" width:144 height:224
 	(
 		spn_from.value = animationRange.start
 		spn_to.value = animationRange.end
-		lbl_fps.text = "@ " + frameRate as string + " fps"
+		setFPSLable()
 		if checkIfOnline() do
 		(
 			enableSessionButtons true
@@ -193,25 +260,34 @@ rollout fastPreview "Fast Preview" width:144 height:224
 	(
 		queryBox "End session? The sandbox 3ds Max scene will be closed." title:"End session?" beep:false
 	)
-	on fastPreview close do closeSession()
+	on fastPreview close do ()--closeSession()
 	on btn_begin pressed do
 	(
 		server = includeLocation + "MAXServer.ms"
-		shellLaunch (getdir #maxroot + "3dsmax.exe") (" -U MAXScript \"" + server + "\"")
+		shellLaunch (getdir #maxroot + "3dsmax.exe") ("-q -U MAXScript \"" + server + "\"")
 		connecting = true
 		waitForPort()
 	)
 	on btn_render pressed do
 	(
-		preview = buildPreviewScript()
-		if previewScript != "" do
+		setFPSLable()
+		if (isFileUnlocked previewFile) then
 		(
-			cam = exportCameraAndBuildMergeScript()
-			viewportStyle = buildViewportStyleScript()
-			sceneObjects = buildSceneObjectsScript()
-			command = viewportStyle + cam + sceneObjects + preview
-			execute command
+			preview = buildPreviewScript()
+			if preview != "" do
+			(
+				cam = exportCameraAndBuildMergeScript()
+				viewportStyle = buildViewportStyleScript()
+				sceneObjects = buildSceneObjectsAsBoxesScript()
+				clearScene = "delete objects;"
+				command = clearScene + cam + viewportStyle + sceneObjects + preview
+				socket = MAXclient "127.0.0.1" 7777
+				socket.send command
+				socket.send command -- command is not sent on first attempt? Need to investigate
+				ckeckIfBusy()
+			)
 		)
+		else messagebox "         The preview file is currently in use!" title:"Write failed!" beep:false
 	)
 	on chk_range changed state do
 	(
