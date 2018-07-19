@@ -30,6 +30,23 @@ rollout fastPreview "Fast Preview" width:144 height:224
 	local connecting = false
 	local previewFile = GetDir #preview + "\\quickPreview.avi"
 	local mergeFile = GetDir #autoback + "\\quickPreview.max"
+	local scriptFile = GetDir #preview + "\\quickPreview.ms"
+	
+	fn writeStringToFileAndReturnCommand str =
+	(
+		cmd = stringstream ""
+		result = createFile scriptFile
+		close result
+		if result != undefined then
+		(
+			f = openFile scriptFile mode:"w"
+			format str to:f
+			close f
+			format "fileIn \"%\"" scriptFile to:cmd
+		)
+		else messagebox "       Could not write script!" title:"Write error!" beeo:false
+		return cmd as string
+	)
 	
 	fn setFPSLable =
 	(
@@ -132,8 +149,8 @@ rollout fastPreview "Fast Preview" width:144 height:224
 			format "save anim_bmp;" to:cmd
 			format ");" to:cmd
 			format "close anim_bmp;" to:cmd
-			format "gc();" to:cmd
 			format "shellLaunch preview_name \"\";" to:cmd
+			format "gc();" to:cmd
 		)
 		return cmd as string
 	)
@@ -165,10 +182,31 @@ rollout fastPreview "Fast Preview" width:144 height:224
 		if selection.count != 0 then
 		(
 			sel = execute "$/selection/*"
-			for obj in sel do
-			(
-				
-			)
+-- 			format "undo off(" to:cmd
+-- 				format "with redraw off(" to:cmd
+					for obj in sel do
+					(
+						worldSpaceXform = obj.transform
+						objectSpaceXform = inverse worldSpaceXform
+						scaleX = obj.scale.x
+						scaleY = obj.scale.y
+						scaleZ = obj.scale.z
+						obj.transform *= objectSpaceXform
+						L = (obj.max.x - obj.min.x) * scaleX
+						W = (obj.max.y - obj.min.y) * scaleY
+						H = (obj.max.z - obj.min.z) * scaleZ
+						obj.transform = worldSpaceXform
+						rot = obj.transform.rotation
+						format "b = box length:% width:% height:%;" L W H to:cmd
+						format "b.transform = translate (% as matrix3) b.transform.pos;" rot to:cmd
+						format "r = b.transform.rotation * (inverse %);" rot to:cmd
+						format "b.rotation *= r;" to:cmd
+						format "b.pos = %;" obj.pos to:cmd
+						format "b.pos.z = %;" obj.min.z to:cmd
+						format "b.wirecolor = color (random 0 255) (random 0 255) (random 0 255);" to:cmd
+					)
+-- 				format ")" to:cmd
+-- 			format ");" to:cmd
 		)
 		else messagebox "Please select objects you wish to see in the preview." title:"No selection" beeb:false
 		return cmd as string
@@ -204,8 +242,8 @@ rollout fastPreview "Fast Preview" width:144 height:224
 	fn closeSession =
 	(
 		socket = MAXclient "127.0.0.1" 7777
-		socket.send "quitMax #noPrompt"
-		socket.send "quitMax #noPrompt"
+		socket.send "quitMax #noPrompt;"
+		socket.send "quitMax #noPrompt;"
 	)
 	
 	fn enableSessionButtons state = 
@@ -281,9 +319,10 @@ rollout fastPreview "Fast Preview" width:144 height:224
 				sceneObjects = buildSceneObjectsAsBoxesScript()
 				clearScene = "delete objects;"
 				command = clearScene + cam + viewportStyle + sceneObjects + preview
+				script = writeStringToFileAndReturnCommand command
 				socket = MAXclient "127.0.0.1" 7777
-				socket.send command
-				socket.send command -- command is not sent on first attempt? Need to investigate
+				socket.send script
+				socket.send script -- command is not sent on first attempt? Need to investigate
 				ckeckIfBusy()
 			)
 		)
