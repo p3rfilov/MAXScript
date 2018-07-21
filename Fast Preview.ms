@@ -1,13 +1,26 @@
----------------- WORK IN PROGRESS ----------------
-
 /*---------------------------------------------------------------
-Name: Fast Preview
+Name: Fast Preview v1.0
 
 Description:
-This script renders animated previews in a sepparate 3ds Max session
+This script renders animated previews in a separate 3ds Max session.
+Objects are rendered as boxes, speeding up rendering while still giving
+a good sense of camera movement.
+
+Dependencies:
+...\TCP\
+    MaxClient.ms
+    MaxServer.ms
+
+Usage:
+1. Run the script
+2. If “Offline” – press “Begin Session”
+3. Wait until the sandbox 3ds Max scene is loaded. It will say “Online!” and go green
+4. Select objects to preview (something in the shot, to see the camera speed)
+5. Press “Render Preview”
+6. You can continue working while the preview is being rendered in the background
 
 Author: Andrej Perfilov [perfilov3d.com]
-Date: 01-01-2018
+Date: 21-07-2018
 */---------------------------------------------------------------
 
 includeLocation = getFilenamePath (getThisScriptFilename()) + "TCP\\"
@@ -15,22 +28,29 @@ filein (includeLocation + "MAXClient.ms")
 
 try(destroydialog fastPreview)catch()
 
-rollout fastPreview "Fast Preview" width:144 height:224
+rollout fastPreview "Fast Preview 1.0" width:152 height:312
 (
-	button 'btn_begin' "Begin Session" pos:[8,40] width:128 height:40 align:#left
-	progressBar 'pb_status' "" pos:[8,8] width:128 height:8 value:100 color:yellow align:#left
-	button 'btn_render' "Render Preview" pos:[8,176] width:128 height:40 align:#left enabled:false
-	checkbox 'chk_range' "Set custom range" pos:[16,105] width:104 height:16 checked:false align:#left
-	GroupBox 'grp1' "Sequence Info" pos:[8,88] width:128 height:80 align:#left
+	button 'btn_begin' "Begin Session" pos:[8,40] width:136 height:40 align:#left
+	progressBar 'pb_status' "" pos:[8,8] width:136 height:8 value:100 color:(color 255 255 0) align:#left
+	button 'btn_Render' "Render Preview" pos:[8,264] width:136 height:40 enabled:false align:#left
+	checkbox 'chk_range' "Set custom range" pos:[16,105] width:112 height:16 checked:false align:#left
+	GroupBox 'grp1' "Sequence Settings" pos:[8,88] width:136 height:80 align:#left
 	spinner 'spn_from' "" pos:[16,125] width:56 height:16 enabled:false range:[-100000,100000,0] type:#integer scale:1 align:#left
-	spinner 'spn_to' "" pos:[72,124] width:56 height:16 enabled:false range:[-100000,100000,0] type:#integer scale:1 align:#left
-	label 'lbl_status' "Status: " pos:[8,20] width:128 height:16 align:#left
-	label 'lbl_fps' "@ ?? fps" pos:[47,147] width:52 height:16 align:#left
+	spinner 'spn_to' "" pos:[80,124] width:56 height:16 enabled:false range:[-100000,100000,0] type:#integer scale:1 align:#left
+	label 'lbl_status' "Status: " pos:[8,20] width:136 height:16 align:#left
+	label 'lbl_fps' "@ ?? fps" pos:[52,147] width:52 height:16 align:#left
+	GroupBox 'grp2' "Quality Settings" pos:[8,176] width:136 height:80 align:#left
+	spinner 'spn_boxSegs' "" pos:[88,216] width:48 height:16 range:[500,1e+06,2500] type:#integer scale:500 align:#left
+	label 'lbl3' "Box subdivs" pos:[16,216] width:72 height:16 align:#left
+	spinner 'spn_resolution' "" pos:[88,200] width:48 height:16 range:[0.1,1,0.5] align:#left
+	label 'lbl7' "Resolution" pos:[16,200] width:72 height:16 align:#left
+	checkbox 'chk_clay' "Clay Style Render" pos:[15,235] width:120 height:16 checked:true align:#left
 	
 	local connecting = false
 	local previewFile = GetDir #preview + "\\quickPreview.avi"
 	local mergeFile = GetDir #autoback + "\\quickPreview.max"
 	local scriptFile = GetDir #preview + "\\quickPreview.ms"
+	local maxVer = ((maxVersion())[1]/1000)+1998 -- current Max Version
 	
 	fn writeStringToFileAndReturnCommand str =
 	(
@@ -57,8 +77,16 @@ rollout fastPreview "Fast Preview" width:144 height:224
 	(
 		try
 		(
-			f = openFile file mode:"a"
-			close f
+			if maxVer > 2012 then
+			(
+				f = openFile file mode:"a"
+				close f
+			)
+			else
+			(
+				f = createFile file
+				close f
+			)
 		) catch(return false)
 		if f != undefined then
 			return true
@@ -73,6 +101,16 @@ rollout fastPreview "Fast Preview" width:144 height:224
 		sleepTime = 0.2
 		counter = 0
 		limit = 120.0
+		
+		lbl_status.text = "Status: Busy..."
+		pb_status.color = yellow
+		btn_render.enabled = false
+		
+		for i = 1 to 10 do -- wait 2 sec to make sure command has gone through
+		(
+			sleep sleepTime
+			windows.processPostedMessages()
+		)
 		while busy and counter < limit do
 		(
 			if not (isFileUnlocked previewFile) then
@@ -80,9 +118,6 @@ rollout fastPreview "Fast Preview" width:144 height:224
 				sleep sleepTime
 				counter += sleepTime
 				windows.processPostedMessages()
-				lbl_status.text = "Status: Busy..."
-				pb_status.color = yellow
-				btn_render.enabled = false
 			)
 			else
 			(
@@ -139,7 +174,7 @@ rollout fastPreview "Fast Preview" width:144 height:224
 			format "animationRange = %;" animationRange to:cmd
 			format "frameRate = %;" frameRate to:cmd
 			format "preview_name = \"%\";" previewFile to:cmd
-			format "view_size = getViewSize()/2;" to:cmd
+			format "view_size = getViewSize()*%;" spn_resolution.value to:cmd
 			format "anim_bmp = bitmap view_size.x view_size.y filename:preview_name;" to:cmd
 			format "for t = % to % do" range[1] range[2] to:cmd
 			format "(" to:cmd
@@ -168,11 +203,16 @@ rollout fastPreview "Fast Preview" width:144 height:224
 	fn buildViewportStyleScript =
 	(
 		cmd = stringstream ""
+		ngm = NitrousGraphicsManager.GetActiveViewportSetting()
+		style = ngm.VisualStyleMode
 		format "viewport.setLayout #layout_1;" to:cmd
 		format "viewport.setGridVisibility #all %;" (viewport.getGridVisibility 1) to:cmd
 		format "viewport.SetRenderLevel %;" (viewport.GetRenderLevel()) to:cmd
 		format "viewport.SetShowEdgeFaces %;" (viewport.GetShowEdgeFaces()) to:cmd
 		format "viewport.SetTransparencyLevel %;" (viewport.GetTransparencyLevel()) to:cmd
+		format "ngm = NitrousGraphicsManager.GetActiveViewportSetting();" to:cmd
+		format "ngm.VisualStyleMode = %;" style to:cmd
+		format "displayColor.wireframe = #material;" to:cmd
 		return cmd as string
 	)
 	
@@ -182,31 +222,36 @@ rollout fastPreview "Fast Preview" width:144 height:224
 		if selection.count != 0 then
 		(
 			sel = execute "$/selection/*"
--- 			format "undo off(" to:cmd
--- 				format "with redraw off(" to:cmd
-					for obj in sel do
-					(
-						worldSpaceXform = obj.transform
-						objectSpaceXform = inverse worldSpaceXform
-						scaleX = obj.scale.x
-						scaleY = obj.scale.y
-						scaleZ = obj.scale.z
-						obj.transform *= objectSpaceXform
-						L = (obj.max.x - obj.min.x) * scaleX
-						W = (obj.max.y - obj.min.y) * scaleY
-						H = (obj.max.z - obj.min.z) * scaleZ
-						obj.transform = worldSpaceXform
-						rot = obj.transform.rotation
-						format "b = box length:% width:% height:%;" L W H to:cmd
-						format "b.transform = translate (% as matrix3) b.transform.pos;" rot to:cmd
-						format "r = b.transform.rotation * (inverse %);" rot to:cmd
-						format "b.rotation *= r;" to:cmd
-						format "b.pos = %;" obj.pos to:cmd
-						format "b.pos.z = %;" obj.min.z to:cmd
-						format "b.wirecolor = color (random 0 255) (random 0 255) (random 0 255);" to:cmd
-					)
--- 				format ")" to:cmd
--- 			format ");" to:cmd
+			for obj in sel do
+			(
+				worldSpaceXform = obj.transform
+				objectSpaceXform = inverse worldSpaceXform
+				scaleX = obj.scale.x
+				scaleY = obj.scale.y
+				scaleZ = obj.scale.z
+				obj.transform *= objectSpaceXform
+				L = (obj.max.x - obj.min.x) * scaleX
+				W = (obj.max.y - obj.min.y) * scaleY
+				H = (obj.max.z - obj.min.z) * scaleZ
+				Lsegs = (abs ((L/spn_boxSegs.value) as integer)) + 1
+				Wsegs = (abs ((W/spn_boxSegs.value) as integer)) + 1
+				Hsegs = abs (((H/spn_boxSegs.value) as integer)) + 1
+				obj.transform = worldSpaceXform
+				rot = obj.transform.rotation
+				piv = obj.pivot
+				CenterPivot obj
+				boxPos = [obj.pos.x, obj.pos.y, obj.min.z]
+				obj.pivot = piv
+				format "b = box length:% width:% height:% lengthsegs:% widthsegs:% heightsegs:%;" L W H Lsegs Wsegs Hsegs to:cmd
+				format "b.transform = translate (% as matrix3) b.transform.pos;" rot to:cmd
+				format "r = b.transform.rotation * (inverse %);" rot to:cmd
+				format "b.rotation *= r;" to:cmd
+				format "b.pos = %;" boxPos to:cmd
+				if chk_clay.checked then
+					format "b.wirecolor = color 180 70 70;" to:cmd
+				else
+					format "b.wirecolor = color (random 0 255) (random 0 255) (random 0 255);" to:cmd
+			)
 		)
 		else messagebox "Please select objects you wish to see in the preview." title:"No selection" beeb:false
 		return cmd as string
@@ -294,11 +339,12 @@ rollout fastPreview "Fast Preview" width:144 height:224
 			enableSessionButtons true
 		)
 	)
+	on fastPreview close do
+		closeSession()
 	on fastPreview okToClose do
 	(
 		queryBox "End session? The sandbox 3ds Max scene will be closed." title:"End session?" beep:false
 	)
-	on fastPreview close do ()--closeSession()
 	on btn_begin pressed do
 	(
 		server = includeLocation + "MAXServer.ms"
@@ -306,7 +352,7 @@ rollout fastPreview "Fast Preview" width:144 height:224
 		connecting = true
 		waitForPort()
 	)
-	on btn_render pressed do
+	on btn_Render pressed do
 	(
 		setFPSLable()
 		if (isFileUnlocked previewFile) then
@@ -318,12 +364,15 @@ rollout fastPreview "Fast Preview" width:144 height:224
 				viewportStyle = buildViewportStyleScript()
 				sceneObjects = buildSceneObjectsAsBoxesScript()
 				clearScene = "delete objects;"
-				command = clearScene + cam + viewportStyle + sceneObjects + preview
-				script = writeStringToFileAndReturnCommand command
-				socket = MAXclient "127.0.0.1" 7777
-				socket.send script
-				socket.send script -- command is not sent on first attempt? Need to investigate
-				ckeckIfBusy()
+				if sceneObjects != "" do
+				(
+					command = clearScene + cam + viewportStyle + sceneObjects + preview
+					script = writeStringToFileAndReturnCommand command
+					socket = MAXclient "127.0.0.1" 7777
+					socket.send script
+					socket.send script -- command is not sent on first attempt? Need to investigate
+					ckeckIfBusy()
+				)
 			)
 		)
 		else messagebox "         The preview file is currently in use!" title:"Write failed!" beep:false
