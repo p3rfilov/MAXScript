@@ -64,7 +64,7 @@ rollout fastPreview "Fast Preview 1.0" width:152 height:312
 			close f
 			format "fileIn \"%\"" scriptFile to:cmd
 		)
-		else messagebox "       Could not write script!" title:"Write error!" beeo:false
+		else messagebox "       Could not write script!" title:"Write error!" beep:false
 		return cmd as string
 	)
 	
@@ -253,7 +253,7 @@ rollout fastPreview "Fast Preview 1.0" width:152 height:312
 					format "b.wirecolor = color (random 0 255) (random 0 255) (random 0 255);" to:cmd
 			)
 		)
-		else messagebox "Please select objects you wish to see in the preview." title:"No selection" beeb:false
+		else messagebox "Please select objects you wish to see in the preview." title:"No selection" beep:false
 		return cmd as string
 	)
 	
