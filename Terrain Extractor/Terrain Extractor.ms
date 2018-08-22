@@ -1,9 +1,37 @@
+/*---------------------------------------------------------------
+Name: Terrain Extractor
 
------------------------------------------ WORK IN PROGRESS -----------------------------------------
+Description:
+Generates a terrain mesh based on the data extracted from a DWG file.
+Basically, this tool takes every piece of text in a dwg file and tries to 
+convert it to a altitude point, taking the text anchor point as it's position. 
+Svg file format is used to extract this data, as there is
+currently no way to directly import dwg text into a 3ds Max scene.
+
+Usage:
+1. Prepare you dwg drawing:
+	a. Remove unnecessary elements
+	b. Make sure the drawing is scaled correctly relative to your 3ds Max scene units.
+	c. Make sure the drawing is close to the origin (0, 0, 0) to avoid unit inaccuracies.
+	d. Draw a rectangle around your drawing to avoid possible scale mismatches.
+	e. Make sure the text is fully readable when you ZoomFit everything.
+	   If it is being displayed as a box, make sure to scale it up (subtleties of DraftSight svg export...)
+2. Press "Select DWG file". This will generate a svg file and extract all the level data.
+3. Press "Generate Points"
+4. Delete any points that look odd and are not part of the terrain.
+5. Press "Generate Terrain".
+
+Dependencies:
+DASSAULT SYSTÈMES DraftSight
+You probably can use AutoCAD too. Will be added in the next release.
+
+Author: Andrej Perfilov [perfilov3d.com]
+Date: 20-08-2018
+*/---------------------------------------------------------------
 
 try(destroydialog terrainExtractor)catch()
 
-rollout terrainExtractor "Terrain Extractor" width:208 height:376
+rollout terrainExtractor "Terrain Extractor v0.1" width:208 height:376
 (
 	edittext 'edt_dwgFile' "" pos:[13,32] width:179 height:16 readOnly:true align:#left
 	GroupBox 'grp1' "Source File" pos:[8,8] width:192 height:104 align:#left
@@ -35,11 +63,6 @@ rollout terrainExtractor "Terrain Extractor" width:208 height:376
 	local cornerPointNames = "TerrExtCornerPoint_"
 	local terrainName = "TerrExtTerrain_"
 	
-	/*---------------------------------------------------------------
-	Purpose: Does stuff
-	Input: None
-	Return: None
-	*/---------------------------------------------------------------
 	fn FIND source str =
 	(
 		if (findString source str) != undefined then
@@ -49,9 +72,9 @@ rollout terrainExtractor "Terrain Extractor" width:208 height:376
 	)
 
 	/*---------------------------------------------------------------
-	Purpose: Does stuff
-	Input: None
-	Return: None
+	Purpose: Parse svg file data. Extract all text entities.
+	Input: File path (*.svg)
+	Return: array
 	*/---------------------------------------------------------------
 	fn extractDataFromSVG file =
 	(
@@ -117,9 +140,10 @@ rollout terrainExtractor "Terrain Extractor" width:208 height:376
 	)
 
 	/*---------------------------------------------------------------
-	Purpose: Does stuff
-	Input: None
-	Return: None
+	Purpose: Create a script file that is used by CAD software
+	to convert dwg to svg
+	Input: *.scr file path, *.dwg file path, *.svg file path
+	Return: True is operation succeeded, else False
 	*/---------------------------------------------------------------
 	fn createScript script dwg svg =
 	(
@@ -140,14 +164,14 @@ rollout terrainExtractor "Terrain Extractor" width:208 height:376
 		else
 		(
 			messagebox "       Could not write script!" title:"Write error!" beep:false
-			return ""
+			return False
 		)
 	)
 
 	/*---------------------------------------------------------------
-	Purpose: Does stuff
-	Input: None
-	Return: None
+	Purpose: Converts a given dwg file to a svg 
+	Input: *.dwg file path
+	Return: *.dwg file path if operation succeeded, else Empty String
 	*/---------------------------------------------------------------
 	fn generateSVG dwg =
 	(
@@ -227,8 +251,6 @@ rollout terrainExtractor "Terrain Extractor" width:208 height:376
 	(
 		fileUnits = units.MetricType
 		pointUnits = ddl_units.selected
-		print fileUnits
-		print pointUnits
 		default = 1000 --scene units in mm; incoming units in m
 		if fileUnits == #millimeters do
 		(
@@ -246,13 +268,14 @@ rollout terrainExtractor "Terrain Extractor" width:208 height:376
 		append points (createPoint [0,0,0] corner:true)
 		
 		scaleFactor = getScaleFactor svgData dwgNode
+		pointScaleFactor = getLevelPointScaleFactor()
 		height = svgData[1][2][1] * scaleFactor
 		width = svgData[1][2][2] * scaleFactor
 		append points (createPoint [width, height, 0] corner:true)
 		
 		for data in svgData[2] do
 		(
-			pos = [data[1][1]*scaleFactor, data[1][2]*scaleFactor, data[2]*getLevelPointScaleFactor()]
+			pos = [data[1][1]*scaleFactor, data[1][2]*scaleFactor, data[2]*pointScaleFactor]
 			append points (createPoint pos)
 		)
 		
@@ -270,6 +293,9 @@ rollout terrainExtractor "Terrain Extractor" width:208 height:376
 		
 		if points.count > 0 do
 		(
+			select points[1].parent.children
+			redrawviews()
+			clearSelection()
 			height = abs(points[1].parent.max.y - points[1].parent.min.y)
 			width = abs(points[1].parent.max.x - points[1].parent.min.x)
 				
@@ -396,7 +422,7 @@ rollout terrainExtractor "Terrain Extractor" width:208 height:376
 		if dwgNode != undefined and svgData != undefined then
 			generatePointCloud()
 		else
-			messagebox "No point data found! Import DWG and Ggenerate SVG data first." title:"No data" beep:false
+			messagebox "No point data found! Import DWG and generate SVG data first." title:"No data" beep:false
 	)
 	on btn_genTerrain pressed do
 	(
